@@ -1,0 +1,19 @@
+torch,torchvision       #https://download.pytorch.org/whl/torch_stable.html
+opacus    #conda install -c conda-forge opacus
+pandas
+scikit-learn
+tqdm
+pyyaml
+imageio
+opencv-python
+matplotlib
+
+numpy
+scipy
+keras
+Pillow
+scikit-image
+tensorboard
+Kornia
+seaborn
+grad-cam
