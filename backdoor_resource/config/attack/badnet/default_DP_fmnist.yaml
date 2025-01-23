@@ -1,0 +1,28 @@
+num_workers: 8
+pin_memory: True
+non_blocking: True
+prefetch: False
+amp: False
+device: cuda:0
+client_optimizer: sgd
+
+# dataset: cifar10
+# model: vgg19
+dataset_path: ../data/datasets
+
+attack_label_trans: all2one
+attack_target: 0
+pratio: 0.37    # necessary change
+attack: badnet
+patch_mask_path: ../backdoor_resource/resource/badnet/trigger_image.png
+
+frequency_save: 0
+batch_size: 128
+lr: 0.01
+lr_scheduler: CosineAnnealingLR
+random_seed: 0
+sgd_momentum: 0.9
+wd: 0.0005
+epochs: 100    # necessary change
+
+

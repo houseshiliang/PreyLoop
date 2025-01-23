@@ -38,7 +38,7 @@ from utils.aggregate_block.model_trainer_generate import generate_cls_model
 from utils.aggregate_block.train_settings_generate import argparser_opt_scheduler, argparser_criterion
 from utils.save_load_attack import save_attack_result
 from backdoor_attacks.prototype_with_DP import NormalCase
-from utils.trainer_cls import BackdoorModelTrainer
+from utils.trainer_cls_with_DP import BackdoorModelTrainer
 from utils.bd_dataset_v2 import prepro_cls_DatasetBD_v2, dataset_wrapper_with_transform
 from torch.utils.data.dataloader import DataLoader
 from opacus import PrivacyEngine
@@ -252,7 +252,9 @@ class BadNet(NormalCase):
             prefetch=args.prefetch,
             prefetch_transform_attr_name="ori_image_transform_in_loading",  # since we use the preprocess_bd_dataset
             non_blocking=args.non_blocking,
-            args = args
+            args = args,
+            bd_train_dataset_with_transform=bd_train_dataset_with_transform,
+            bd_test_dataset_with_transform = bd_test_dataset_with_transform
             # privacy_engine = self.privacy_engine,
             # delta = self.delta
         )

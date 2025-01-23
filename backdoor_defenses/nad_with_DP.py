@@ -59,6 +59,7 @@ from utils.log_assist import get_git_info
 from utils.aggregate_block.dataset_and_transform_generate import get_input_shape, get_num_classes, get_transform
 from utils.save_load_attack import load_attack_result, save_defense_result
 from utils.bd_dataset_v2 import prepro_cls_DatasetBD_v2
+import copy
 
 
 
@@ -596,6 +597,8 @@ class nad(defense):
         parser.add_argument('--steplr_milestones', type=list)
         parser.add_argument('--model', type=str, help='preactresnet18')
         parser.add_argument('--attack', type=str, default= 'badnet')
+        parser.add_argument('--DP_type', type=str,  default='rdp')
+        parser.add_argument('--epsilon', type=str, default= '8')
         
         parser.add_argument('--client_optimizer', type=int)
         parser.add_argument('--sgd_momentum', type=float)
@@ -625,9 +628,9 @@ class nad(defense):
     def set_result(self):
         args=self.args
         # attack_file = 'record/' + result_file
-        attack_file = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack
-        # save_path = 'record/' + result_file + '/defense/nad/'
-        save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/defense/nad/'
+        attack_file = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/' + 'DP'
+        # save_path = 'record/' + result_file + '/defense/ft/'
+        save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/' + 'DP' + '/defense/' + args.DP_type+ '_' + args.epsilon +'/nad/'
         if not (os.path.exists(save_path)):
             os.makedirs(save_path)
         # assert(os.path.exists(save_path))    
@@ -640,7 +643,10 @@ class nad(defense):
             self.args.log = save_path + 'log/'
             if not (os.path.exists(self.args.log)):
                 os.makedirs(self.args.log)  
-        self.result = load_attack_result(attack_file + '/attack_result.pth')
+                
+        result_path=attack_file + '/backdoored_model_rdp_' + str(args.epsilon) + '.pth'
+        print("---------------- model_path ----------------", result_path)
+        self.result = load_attack_result(result_path)
 
     def set_trainer(self, model, mode = 'normal', **params):
         if mode == 'normal':
@@ -698,6 +704,18 @@ class nad(defense):
         ### a. create student models, set training parameters and determine loss functions
         # Load models
         logging.info('----------- Network Initialization --------------')
+        
+        state_dict = result['model']
+        # 去除 '_module' 前缀
+        new_state_dict = {}
+        for key, value in state_dict.items():
+            if key.startswith("_module."):
+                new_key = key[len("_module."):]  # 去掉前缀
+                new_state_dict[new_key] = value
+            else:
+                new_state_dict[key] = value
+        result['model'] = copy.deepcopy(new_state_dict)
+                
         teacher = generate_cls_model(args.model,args.num_classes, args.img_size[2], args.img_size[0])
         teacher.load_state_dict(result['model'])
         if "," in self.device:

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from utils.prefetch import PrefetchLoader, prefetch_transform
 from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
+from utils.save_load_attack import save_attack_result_with_DP
 
 
 def seed_worker(worker_id):
@@ -1305,6 +1306,7 @@ class ModelTrainerCLS_v2():
         self.agg_save_summary()
 
     def agg_save_dataframe(self):
+        # print('----------- ', self.metric_aggregator.to_dataframe(), ' -----------')
         self.metric_aggregator.to_dataframe().to_csv(f"{self.save_folder_path}/{self.save_prefix}_df.csv")
 
     def agg_save_summary(self):
@@ -1869,7 +1871,9 @@ class BackdoorModelTrainer(ModelTrainerCLS_v2):
                                    prefetch,
                                    prefetch_transform_attr_name,
                                    non_blocking,
-                                #    args
+                                   args,
+                                   bd_train_dataset_with_transform,
+                                   bd_test_dataset_with_transform
                                 #    privacy_engine = None,
                                 #    delta = None
                                    ):
@@ -1882,21 +1886,19 @@ class BackdoorModelTrainer(ModelTrainerCLS_v2):
 
 
         # -------------------------------- change for DP-based training --------------------------------
-        # privacy_engine = PrivacyEngine(accountant=args.DP_type)  # "rdp"
+        privacy_engine = PrivacyEngine(accountant=args.DP_type)  # "rdp"
 
-        # noise_multiplier, max_grad_norm = args.noise, args.norm
+        noise_multiplier, max_grad_norm = args.noise, args.norm
 
-        # delta = args.delta
+        delta = args.delta
 
-        # self.model, optimizer, train_dataloader = privacy_engine.make_private(
-        #         module = self.model,
-        #         optimizer = optimizer,
-        #         data_loader = train_dataloader,
-        #         noise_multiplier = noise_multiplier,
-        #         max_grad_norm = max_grad_norm,
-        # )
-
-
+        self.model, optimizer, train_dataloader = privacy_engine.make_private(
+                module = self.model,
+                optimizer = optimizer,
+                data_loader = train_dataloader,
+                noise_multiplier = noise_multiplier,
+                max_grad_norm = max_grad_norm,
+        )
 
         self.set_with_dataloader(
             train_dataloader,
@@ -1925,8 +1927,13 @@ class BackdoorModelTrainer(ModelTrainerCLS_v2):
         test_acc_list = []
         test_asr_list = []
         test_ra_list = []
-
-        for epoch in range(total_epoch_num):
+        
+        last_epsilon=0
+        epsilon=0
+        epoch =0
+        # for epoch in range(total_epoch_num):
+        while epsilon < 8.02:
+            epoch += 1
 
             train_epoch_loss_avg_over_batch, \
             train_epoch_predict_list, \
@@ -1970,7 +1977,72 @@ class BackdoorModelTrainer(ModelTrainerCLS_v2):
             bd_test_loss_avg_over_batch = bd_metrics["test_loss_avg_over_batch"]
             test_asr = all_acc(bd_test_epoch_predict_list, bd_test_epoch_label_list)
             test_ra = all_acc(bd_test_epoch_predict_list, bd_test_epoch_original_targets_list)
-            # epsilon = privacy_engine.accountant.get_epsilon(delta=delta)
+            epsilon = privacy_engine.accountant.get_epsilon(delta=delta)
+            
+            if last_epsilon<2 and epsilon>=2:
+                path= save_folder_path + "/backdoored_model_" + args.DP_type + "_" + str(2) + ".pth"
+                save_attack_result_with_DP(
+                    model_name=args.model,
+                    num_classes=args.num_classes,
+                    model=self.model.cpu().state_dict(),
+                    data_path=args.dataset_path,
+                    img_size=args.img_size,
+                    clean_data=args.dataset,
+                    bd_train=bd_train_dataset_with_transform,
+                    bd_test=bd_test_dataset_with_transform,
+                    save_path=path,
+                )
+                
+                pd.DataFrame([epoch, test_acc, test_asr, epsilon]).to_csv(save_folder_path + "/" + args.DP_type + str(2) + ".csv", index=False, header=False)
+                
+            elif last_epsilon<4 and epsilon>=4:
+                path= save_folder_path + "/backdoored_model_" + args.DP_type + "_" + str(4) + ".pth"
+                save_attack_result_with_DP(
+                    model_name=args.model,
+                    num_classes=args.num_classes,
+                    model=self.model.cpu().state_dict(),
+                    data_path=args.dataset_path,
+                    img_size=args.img_size,
+                    clean_data=args.dataset,
+                    bd_train=bd_train_dataset_with_transform,
+                    bd_test=bd_test_dataset_with_transform,
+                    save_path=path,
+                )
+                pd.DataFrame([epoch, test_acc, test_asr, epsilon]).to_csv(save_folder_path + "/" + args.DP_type + str(4) + ".csv", index=False, header=False)
+                
+            elif last_epsilon<6 and epsilon>=6:
+                path= save_folder_path + "/backdoored_model_" + args.DP_type + "_" + str(6) + ".pth"
+                save_attack_result_with_DP(
+                    model_name=args.model,
+                    num_classes=args.num_classes,
+                    model=self.model.cpu().state_dict(),
+                    data_path=args.dataset_path,
+                    img_size=args.img_size,
+                    clean_data=args.dataset,
+                    bd_train=bd_train_dataset_with_transform,
+                    bd_test=bd_test_dataset_with_transform,
+                    save_path=path,
+                )
+                pd.DataFrame([epoch, test_acc, test_asr, epsilon]).to_csv(save_folder_path + "/" + args.DP_type + str(6) + ".csv", index=False, header=False)
+                
+            elif last_epsilon<8 and epsilon>=8:
+                # torch.save(self.model.state_dict(), save_folder_path + "/backdoored_model_" + args.DP_type + "_" 
+                #                 + str(8) + ".pth")
+                path= save_folder_path + "/backdoored_model_" + args.DP_type + "_" + str(8) + ".pth"
+                save_attack_result_with_DP(
+                    model_name=args.model,
+                    num_classes=args.num_classes,
+                    model=self.model.cpu().state_dict(),
+                    data_path=args.dataset_path,
+                    img_size=args.img_size,
+                    clean_data=args.dataset,
+                    bd_train=bd_train_dataset_with_transform,
+                    bd_test=bd_test_dataset_with_transform,
+                    save_path=path,
+                )
+                pd.DataFrame([epoch, test_acc, test_asr, epsilon]).to_csv(save_folder_path + "/" + args.DP_type + str(8) + ".csv", index=False, header=False)
+                
+            last_epsilon = epsilon
 
             self.agg(
                 {
@@ -1985,7 +2057,7 @@ class BackdoorModelTrainer(ModelTrainerCLS_v2):
                     "test_acc" : test_acc,
                     "test_asr" : test_asr,
                     "test_ra" : test_ra,
-                    # "epsilon" : epsilon
+                    "epsilon" : epsilon
                 }
             )
 

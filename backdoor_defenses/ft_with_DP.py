@@ -35,6 +35,7 @@ from utils.log_assist import get_git_info
 from utils.aggregate_block.dataset_and_transform_generate import get_input_shape, get_num_classes, get_transform
 from utils.save_load_attack import load_attack_result, save_defense_result
 from utils.bd_dataset_v2 import prepro_cls_DatasetBD_v2
+from opacus.validators import ModuleValidator
 
 class ft(defense):
 
@@ -74,6 +75,9 @@ class ft(defense):
         parser.add_argument('--dataset', type=str, help='fmnist, cifar10, stl10, utkface')
         parser.add_argument('--model', type=str, help='preactresnet18')
         parser.add_argument('--attack', type=str, default= 'badnet')
+        parser.add_argument('--DP_type', type=str,  default='rdp')
+        parser.add_argument('--epsilon', type=str, default= '8')
+        
 
         # parser.add_argument('--result_file', type=str, help='the location of result')
     
@@ -100,9 +104,9 @@ class ft(defense):
     def set_result(self):
         args=self.args
         # attack_file = 'record/' + result_file
-        attack_file = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack
+        attack_file = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/' + 'DP'
         # save_path = 'record/' + result_file + '/defense/ft/'
-        save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/defense/ft/'
+        save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/' + 'DP' + '/defense/' + args.DP_type+ '_' + args.epsilon +'/ft/'
         if not (os.path.exists(save_path)):
             os.makedirs(save_path)
         # assert(os.path.exists(save_path))    
@@ -115,8 +119,10 @@ class ft(defense):
             self.args.log = save_path + 'log/'
             if not (os.path.exists(self.args.log)):
                 os.makedirs(self.args.log)  
-        # print("---------------- path ----------------", attack_file + '/attack_result.pth')
-        self.result = load_attack_result(attack_file + '/attack_result.pth')
+        
+        result_path=attack_file + '/backdoored_model_rdp_' + str(args.epsilon) + '.pth'
+        print("---------------- model_path ----------------", result_path)
+        self.result = load_attack_result(result_path)
 
     def set_trainer(self, model):
         self.trainer = PureCleanModelTrainer(
@@ -165,7 +171,26 @@ class ft(defense):
                                    self.args.num_classes,
                                    args.img_size[2],
                                    args.img_size[0])
-        model.load_state_dict(self.result['model'])
+        
+        # -------------------------------- change for DP-based training --------------------------------
+        # if not ModuleValidator.is_valid(model):
+        #     model=ModuleValidator.fix(model)
+        
+
+        state_dict = self.result['model']
+        # 去除 '_module' 前缀
+        new_state_dict = {}
+        for key, value in state_dict.items():
+            if key.startswith("_module."):
+                new_key = key[len("_module."):]  # 去掉前缀
+                new_state_dict[new_key] = value
+            else:
+                new_state_dict[key] = value
+                 
+        model.load_state_dict(new_state_dict)
+        
+        
+        
         if "," in self.device:
             model = torch.nn.DataParallel(
                 model,

@@ -24,7 +24,7 @@ from utils.bd_dataset_v2 import dataset_wrapper_with_transform, get_labels
 from utils.aggregate_block.model_trainer_generate import generate_cls_model
 from utils.aggregate_block.train_settings_generate import argparser_opt_scheduler, argparser_criterion
 from utils.log_assist import get_git_info
-from utils.trainer_cls import ModelTrainerCLS_v2
+from utils.trainer_cls_with_DP import ModelTrainerCLS_v2
 
 
 class NormalCase:
@@ -99,7 +99,7 @@ class NormalCase:
         #     save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack
         #     if not os.path.exists(save_path):
         #         os.mkdir(save_path)
-        save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack
+        save_path = '../backdoor_resource/record/' + args.dataset + '_' + args.model + '/' + args.attack + '/' + 'DP'+ '/'
         if not os.path.exists(save_path):
             os.mkdir(save_path)
         args.save_path = save_path

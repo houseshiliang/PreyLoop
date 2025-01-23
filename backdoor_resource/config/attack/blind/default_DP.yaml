@@ -1,0 +1,30 @@
+attack_label_trans: all2one
+attack_target: 0
+
+attack: blind
+
+weight_loss_balance_mode: fixed
+mgda_normalize: loss+
+fix_scale_normal_weight: 1.0
+fix_scale_backdoor_weight: 0.9
+batch_history_len: 1000
+backdoor_batch_loss_threshold: 1.0
+
+num_workers: 8
+pin_memory: True
+non_blocking: True
+prefetch: False
+amp: False
+device: cuda:0
+client_optimizer: sgd
+dataset_path: ../data/datasets
+random_seed: 0
+attack_target: 0
+frequency_save: 0
+batch_size: 128
+lr: 0.01
+lr_scheduler: CosineAnnealingLR
+random_seed: 0
+sgd_momentum: 0.9
+wd: 0.0005
+epochs: 100

@@ -22,3 +22,5 @@ utils/aggregate_block/__pycache__/
 utils/aggregate_block/Backup/
 utils/bd_img_transform/__pycache__/
 utils/bd_label_transform/__pycache__/
+
+curve_result*

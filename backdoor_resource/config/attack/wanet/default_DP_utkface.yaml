@@ -1,7 +1,7 @@
 attack: wanet
 attack_label_trans: all2one
 attack_target: 0
-pratio: 0.23
+pratio: 0.13
 cross_ratio: 2  # rho_a = pratio, rho_n = pratio * cross_ratio
 random_rotation: 10
 random_crop: 5

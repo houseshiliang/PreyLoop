@@ -29,7 +29,7 @@ seed_torch()
 def train_model(device, train_set, test_set, dataset_name, model, model_name, use_DP, DP_type, noise, norm, delta):
     print("<****************** model: " + model_name + " ==== dataset: "+dataset_name+" ******************>")
     train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=64, shuffle=True, num_workers=2)
+        train_set, batch_size=1024, shuffle=True, num_workers=2)
     test_loader = torch.utils.data.DataLoader(
         test_set, batch_size=64, shuffle=True, num_workers=2)
 
@@ -49,7 +49,7 @@ def train_model(device, train_set, test_set, dataset_name, model, model_name, us
     best_acc_test=0
     best_acc_train=0
     best_epoch=0
-    for i in range(100):
+    for i in range(100000):
         print("<======================= Epoch " + str(i+1) + " =======================>")
         
         print("target training")

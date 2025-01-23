@@ -116,6 +116,61 @@ def save_attack_result(
 
     logging.info("Saved, folder path: {}".format(save_path))
 
+
+
+def save_attack_result_with_DP(
+    model_name : str,
+    num_classes : int,
+    model : dict, # the state_dict
+    data_path : str,
+    img_size : Union[list, tuple],
+    clean_data : str,
+    bd_test : prepro_cls_DatasetBD_v2, # MUST be dataset without transform
+    save_path : str,
+    bd_train : Optional[prepro_cls_DatasetBD_v2] = None, # MUST be dataset without transform
+):
+    
+    
+    '''
+
+    main idea is to loop through the backdoor train and test dataset, and match with the clean dataset
+    by remove replicated parts, this function can save the space.
+
+    WARNING: keep all dataset with shuffle = False, same order of data samples is the basic of this function !!!!
+
+    :param model_name : str,
+    :param num_classes : int,
+    :param model : dict, # the state_dict
+    :param data_path : str,
+    :param img_size : list, like [32,32,3]
+    :param clean_data : str, clean dataset name
+    :param bd_train : torch.utils.data.Dataset, # dataset without transform !!
+    :param bd_test : torch.utils.data.Dataset, # dataset without transform
+    :param save_path : str,
+    '''
+    print ("************ data_path ***************", data_path)
+
+    save_dict = {
+            'model_name': model_name,
+            'num_classes' : num_classes,
+            'model': model,
+            'data_path': data_path,
+            'img_size' : img_size,
+            'clean_data': clean_data,
+            'bd_train': bd_train.retrieve_state() if bd_train is not None else None,
+            'bd_test': bd_test.retrieve_state(),
+        }
+
+    logging.info(f"saving...")
+    # logging.debug(f"location : {save_path}/attack_result.pth") #, content summary :{pformat(summary_dict(save_dict))}")
+
+    torch.save(
+        save_dict,
+        save_path,
+    )
+
+    logging.info("Saved, folder path: {}".format(save_path))
+
 def save_defense_result(
     model_name : str,
     num_classes : int,
@@ -163,7 +218,7 @@ def load_attack_result(
     save_path MUST have 'record' in its abspath, and data_path in attack result MUST have 'data' in its path!!!
     save_path : the path of "attack_result.pth"
     '''
-    print("---------------- save_path ----------------", save_path)
+    # print("---------------- save_path ----------------", save_path)
     load_file = torch.load(save_path)
 
     if all(key in load_file for key in [
@@ -269,3 +324,5 @@ def load_attack_result(
         logging.info(f"loading...")
         logging.debug(f"location : {save_path}, content summary :{pformat(summary_dict(load_file))}")
         return load_file
+    
+    
